@@ -6,158 +6,190 @@
 <title>Console Puzzle</title>
 <style>
   :root{
-    --fond:#161a1f; --panneau:#1e242b; --creux:#12161a; --bord:#2c343d;
-    --texte:#dde3ea; --doux:#8b98a6; --faible:#5d6874;
-    --laiton:#d9a441; --vert:#52a97f; --orange:#d98b45; --rouge:#cf5c5c; --bleu:#6e9ec9;
-    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,monospace;
+    --papier:#ffffff;        /* panneaux */
+    --fond:#eef1f4;          /* arriere-plan */
+    --creux:#e3e8ed;         /* barres */
+    --bord:#c3ccd4;
+    --bord-fort:#9aa7b2;
+    --encre:#131a21;         /* texte principal  - contraste 15:1 */
+    --encre-2:#3f4d5a;       /* texte secondaire - contraste 8:1  */
+    --encre-3:#5d6b78;       /* texte tertiaire  - contraste 6:1  */
+    --bleu:#1c5fa8;
+    --vert:#17693f;
+    --ambre:#8a5800;
+    --rouge:#b02020;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
   }
   *{box-sizing:border-box}
   html,body{height:100%}
   body{
-    margin:0; background:var(--fond); color:var(--texte);
+    margin:0; background:var(--fond); color:var(--encre);
     font-family:system-ui,-apple-system,"Helvetica Neue",sans-serif;
-    font-size:14px; line-height:1.5;
+    font-size:16px; line-height:1.6;
   }
   button{font:inherit; color:inherit; cursor:pointer}
-  button:focus-visible,input:focus-visible{outline:2px solid var(--laiton); outline-offset:2px}
+  button:focus-visible,input:focus-visible{outline:3px solid var(--bleu); outline-offset:2px}
 
   /* ---------- en-tete ---------- */
   header{
     display:flex; align-items:center; gap:18px; flex-wrap:wrap;
-    padding:14px 20px; background:var(--panneau); border-bottom:1px solid var(--bord);
+    padding:14px 22px; background:var(--papier); border-bottom:2px solid var(--bord);
   }
-  h1{margin:0; font-size:17px; font-weight:600; letter-spacing:.2px}
+  h1{margin:0; font-size:21px; font-weight:700}
   .version{
-    background:var(--laiton); color:#1a1508; border:none; border-radius:4px;
-    padding:5px 11px; font-weight:700; font-size:13px;
+    background:var(--bleu); color:#fff; border:none; border-radius:5px;
+    padding:7px 14px; font-weight:700; font-size:15px;
   }
-  .version:hover{filter:brightness(1.1)}
-  .meta{margin-left:auto; text-align:right; font-family:var(--mono); font-size:11.5px; color:var(--doux)}
+  .version:hover{background:#15477e}
+  .meta{margin-left:auto; text-align:right; font-family:var(--mono); font-size:13px; color:var(--encre-2)}
   .meta div{white-space:nowrap}
 
-  /* ---------- bandeau de perte de contact ---------- */
+  /* ---------- bandeau d'alerte ---------- */
   .hors-service{
-    display:none; padding:9px 20px; background:#3a2326; color:#f0c0c0;
-    border-bottom:1px solid #5e3236; font-size:13px;
+    display:none; padding:12px 22px; background:#fbe3e3; color:#7d1717;
+    border-bottom:2px solid #d99; font-size:15px; font-weight:500;
   }
   .hors-service.visible{display:block}
 
   /* ---------- barre d'actions ---------- */
   .actions{
-    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
-    padding:10px 20px; background:var(--creux); border-bottom:1px solid var(--bord);
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    padding:12px 22px; background:var(--creux); border-bottom:2px solid var(--bord);
   }
   .actions button{
-    background:#28313a; border:1px solid var(--bord); border-radius:5px; padding:7px 13px;
+    background:var(--papier); border:2px solid var(--bord-fort); border-radius:6px;
+    padding:9px 15px; font-size:15px; font-weight:500;
   }
-  .actions button:hover:not(:disabled){background:#323d48}
-  .actions button:disabled{opacity:.4; cursor:not-allowed}
-  .actions .primaire{background:var(--laiton); border-color:var(--laiton); color:#1a1508; font-weight:600}
-  .actions .danger{border-color:#5e3236; color:#e79a9a}
-  .etat-global{margin-left:auto; font-size:12.5px; color:var(--doux)}
+  .actions button:hover:not(:disabled){background:#dce5ee; border-color:var(--bleu)}
+  .actions button:disabled{opacity:.45; cursor:not-allowed}
+  .actions .primaire{background:var(--bleu); border-color:var(--bleu); color:#fff; font-weight:700}
+  .actions .primaire:hover:not(:disabled){background:#15477e; color:#fff}
+  .actions .danger{border-color:var(--rouge); color:var(--rouge); font-weight:600}
+  .actions .danger:hover:not(:disabled){background:#fbe3e3}
+  .etat-global{margin-left:auto; font-size:16px; font-weight:600; color:var(--encre)}
 
   /* ---------- disposition ---------- */
-  main{display:grid; grid-template-columns:minmax(340px,420px) 1fr; height:calc(100vh - 108px)}
-  @media (max-width:900px){ main{grid-template-columns:1fr; height:auto} }
+  main{display:grid; grid-template-columns:minmax(380px,460px) 1fr; height:calc(100vh - 130px)}
+  @media (max-width:960px){ main{grid-template-columns:1fr; height:auto} }
 
-  .rail{overflow-y:auto; border-right:1px solid var(--bord); padding:12px}
-  .groupe{margin-bottom:22px}
-  .groupe h2{margin:0 0 4px; font-size:13px; font-weight:600; color:var(--doux)}
-  .groupe p{margin:0 0 10px; font-size:12px; color:var(--faible)}
+  .rail{overflow-y:auto; background:var(--papier); border-right:2px solid var(--bord); padding:16px}
+  .groupe{margin-bottom:26px}
+  .groupe h2{margin:0 0 4px; font-size:17px; font-weight:700; color:var(--encre)}
+  .groupe p{margin:0 0 12px; font-size:14.5px; color:var(--encre-2)}
 
   .etape{
-    display:grid; grid-template-columns:auto 34px 1fr auto; align-items:center; gap:9px;
-    padding:9px 10px; border:1px solid transparent; border-radius:6px; width:100%;
-    background:none; text-align:left; margin-bottom:2px;
+    display:grid; grid-template-columns:auto 40px 1fr auto; align-items:center; gap:11px;
+    padding:11px 12px; border:2px solid transparent; border-left:5px solid transparent;
+    border-radius:6px; width:100%; background:none; text-align:left; margin-bottom:4px;
   }
-  .etape:hover{background:#222932}
-  .etape.actif{background:#263039; border-color:var(--bord)}
-  .etape .num{font-family:var(--mono); font-size:12px; color:var(--faible); text-align:right}
-  .etape .titre{font-size:13.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-  .etape .sous{font-family:var(--mono); font-size:11px; color:var(--faible)}
-  .etape .droite{font-family:var(--mono); font-size:11px; color:var(--doux); text-align:right}
-  .pastille{display:inline-block; width:9px; height:9px; border-radius:50%; background:var(--faible)}
-  .pastille.attente{background:var(--bleu)}
-  .pastille.encours{background:var(--laiton); animation:battement 1.1s ease-in-out infinite}
-  .pastille.ok{background:var(--vert)}
-  .pastille.suspect{background:var(--orange)}
-  .pastille.echec{background:var(--rouge)}
-  @keyframes battement{50%{opacity:.25}}
-  @media (prefers-reduced-motion:reduce){ .pastille.encours{animation:none} }
+  .etape:hover{background:#eaf0f6}
+  .etape.actif{background:#dfeaf5; border-color:var(--bleu)}
+  .etape input[type=checkbox]{width:19px; height:19px; accent-color:var(--bleu); cursor:pointer}
+  .etape .num{font-family:var(--mono); font-size:15px; font-weight:700; color:var(--encre-3); text-align:right}
+  .etape .titre{font-size:16px; font-weight:600; display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .etape .sous{font-family:var(--mono); font-size:12.5px; color:var(--encre-3)}
+  .etape .droite{text-align:right; white-space:nowrap}
+  .etape .duree{display:block; font-family:var(--mono); font-size:12.5px; color:var(--encre-2)}
 
-  .destructif .titre{color:#e79a9a}
+  .badge{
+    display:inline-block; padding:2px 9px; border-radius:11px; font-size:12.5px;
+    font-weight:700; border:2px solid transparent;
+  }
+  .badge.jamais{color:var(--encre-3); border-color:var(--bord); background:var(--fond)}
+  .badge.attente{color:var(--bleu); border-color:#9dc0e4; background:#e4eefa}
+  .badge.encours{color:#fff; background:var(--ambre); border-color:var(--ambre)}
+  .badge.ok{color:#fff; background:var(--vert); border-color:var(--vert)}
+  .badge.suspect{color:#fff; background:var(--ambre); border-color:var(--ambre)}
+  .badge.echec{color:#fff; background:var(--rouge); border-color:var(--rouge)}
+  .badge.arrete{color:var(--encre-2); border-color:var(--bord-fort); background:var(--creux)}
+
+  .etape.destructif{border-left-color:var(--rouge)}
+  .etape.destructif .titre{color:var(--rouge)}
 
   /* ---------- detail ---------- */
-  .detail{display:flex; flex-direction:column; min-width:0; overflow:hidden}
-  .fiche{padding:16px 20px; border-bottom:1px solid var(--bord); overflow-y:auto; max-height:52%}
-  .fiche h3{margin:0 0 6px; font-size:16px; font-weight:600}
-  .fiche .desc{margin:0 0 14px; color:var(--doux); max-width:72ch}
+  .detail{display:flex; flex-direction:column; min-width:0; overflow:hidden; background:var(--papier)}
+  .fiche{padding:20px 24px; border-bottom:2px solid var(--bord); overflow-y:auto; max-height:54%}
+  .fiche h3{margin:0 0 8px; font-size:22px; font-weight:700}
+  .fiche .desc{margin:0 0 16px; color:var(--encre-2); font-size:16px; max-width:70ch}
   .cmd{
-    font-family:var(--mono); font-size:11.5px; background:var(--creux); color:var(--doux);
-    border:1px solid var(--bord); border-radius:5px; padding:9px 11px; margin-bottom:14px;
+    font-family:var(--mono); font-size:13.5px; background:#f2f5f8; color:var(--encre);
+    border:2px solid var(--bord); border-radius:6px; padding:11px 13px; margin-bottom:16px;
     overflow-x:auto; white-space:pre; -webkit-user-select:all; user-select:all;
   }
   .avis{
-    border-left:3px solid var(--orange); background:#241f16; padding:9px 12px;
-    border-radius:0 5px 5px 0; margin-bottom:14px; font-size:13px;
+    border-left:6px solid var(--ambre); background:#fdf3e0; color:#5c3c00;
+    padding:11px 15px; border-radius:0 6px 6px 0; margin-bottom:14px; font-size:15px; font-weight:500;
   }
-  .avis.rouge{border-left-color:var(--rouge); background:#251a1b}
+  .avis.rouge{border-left-color:var(--rouge); background:#fbe3e3; color:#7d1717}
 
-  .flux{display:grid; grid-template-columns:1fr 1fr; gap:16px}
-  @media (max-width:700px){ .flux{grid-template-columns:1fr} }
-  .flux h4{margin:0 0 7px; font-size:12px; font-weight:600; color:var(--doux)}
+  .flux{display:grid; grid-template-columns:1fr 1fr; gap:20px}
+  @media (max-width:760px){ .flux{grid-template-columns:1fr} }
+  .flux h4{margin:0 0 8px; font-size:15px; font-weight:700; color:var(--encre)}
   .chemin{
-    display:flex; align-items:baseline; gap:8px; padding:6px 9px; border-radius:5px;
-    background:var(--creux); margin-bottom:4px; width:100%; border:1px solid transparent;
-    font-family:var(--mono); font-size:11.5px; text-align:left;
+    display:flex; align-items:baseline; gap:10px; padding:8px 11px; border-radius:6px;
+    background:#f2f5f8; margin-bottom:5px; width:100%; border:2px solid var(--bord);
+    font-family:var(--mono); font-size:13px; text-align:left;
   }
-  .chemin:hover{border-color:var(--bord)}
-  .chemin .nom{flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-  .chemin .compte{color:var(--doux); white-space:nowrap}
+  .chemin:hover{border-color:var(--bleu); background:#e7eff7}
+  .chemin .nom{flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--encre)}
+  .chemin .compte{color:var(--encre-2); white-space:nowrap; font-weight:600}
   .chemin .compte.vide{color:var(--rouge)}
-  .chemin .compte.absent{color:var(--faible)}
+  .chemin .compte.absent{color:var(--encre-3)}
+
+  .lancer{
+    background:var(--bleu); color:#fff; border:none; border-radius:6px;
+    padding:11px 20px; font-weight:700; font-size:16px;
+  }
+  .lancer:hover:not(:disabled){background:#15477e}
+  .lancer:disabled{opacity:.45; cursor:not-allowed}
 
   /* ---------- journal ---------- */
-  .journal{display:flex; flex-direction:column; flex:1; min-height:240px}
+  .journal{display:flex; flex-direction:column; flex:1; min-height:260px}
   .journal-barre{
-    display:flex; align-items:center; gap:10px; padding:8px 20px;
-    border-bottom:1px solid var(--bord); background:var(--creux);
+    display:flex; align-items:center; gap:12px; padding:10px 24px; flex-wrap:wrap;
+    border-bottom:2px solid var(--bord); background:var(--creux);
   }
-  .journal-barre label{font-size:12px; color:var(--doux); display:flex; align-items:center; gap:5px}
+  .journal-barre .t{font-size:16px; font-weight:700}
+  .journal-barre label{font-size:15px; color:var(--encre); display:flex; align-items:center; gap:7px}
+  .journal-barre input[type=checkbox]{width:19px; height:19px; accent-color:var(--bleu)}
   .journal-barre input[type=text]{
-    background:var(--fond); border:1px solid var(--bord); border-radius:4px;
-    padding:5px 8px; color:var(--texte); font-family:var(--mono); font-size:11.5px; width:190px;
+    background:var(--papier); border:2px solid var(--bord-fort); border-radius:5px;
+    padding:7px 10px; color:var(--encre); font-family:var(--mono); font-size:13.5px; width:210px;
   }
-  .journal-barre button{background:none; border:1px solid var(--bord); border-radius:4px; padding:5px 10px; font-size:12px}
+  .journal-barre button{
+    background:var(--papier); border:2px solid var(--bord-fort); border-radius:5px;
+    padding:7px 13px; font-size:14.5px; font-weight:500;
+  }
+  .journal-barre button:hover{background:#dce5ee}
   .lignes{
-    flex:1; overflow:auto; margin:0; padding:12px 20px; background:var(--fond);
-    font-family:var(--mono); font-size:11.5px; line-height:1.65; white-space:pre-wrap;
-    word-break:break-word;
+    flex:1; overflow:auto; margin:0; padding:14px 24px; background:var(--papier);
+    font-family:var(--mono); font-size:14px; line-height:1.75; white-space:pre-wrap;
+    word-break:break-word; color:var(--encre);
   }
-  .lignes .l-cmd{color:var(--laiton)}
-  .lignes .l-err{color:var(--rouge)}
+  .lignes .l-cmd{color:var(--bleu); font-weight:700}
+  .lignes .l-err{color:var(--rouge); font-weight:700}
   .lignes .l-ok{color:var(--vert)}
-  .lignes .l-avert{color:var(--orange)}
-  .vide-etat{color:var(--faible); padding:26px 20px; font-family:system-ui,sans-serif}
+  .lignes .l-avert{color:var(--ambre); font-weight:600}
+  .vide-etat{color:var(--encre-2); padding:28px 0; font-family:system-ui,sans-serif; font-size:16px; display:block}
 
   /* ---------- fenetres ---------- */
   dialog{
-    border:1px solid var(--bord); border-radius:8px; background:var(--panneau);
-    color:var(--texte); padding:0; max-width:720px; width:92%;
+    border:2px solid var(--bord-fort); border-radius:9px; background:var(--papier);
+    color:var(--encre); padding:0; max-width:760px; width:92%;
   }
-  dialog::backdrop{background:rgba(0,0,0,.6)}
-  .dlg-tete{display:flex; align-items:center; padding:14px 18px; border-bottom:1px solid var(--bord)}
-  .dlg-tete h3{margin:0; font-size:15px}
-  .dlg-tete button{margin-left:auto; background:none; border:none; color:var(--doux); font-size:20px; line-height:1}
-  .dlg-corps{padding:16px 18px; max-height:60vh; overflow-y:auto}
-  .hist{margin-bottom:14px; padding-left:12px; border-left:2px solid var(--bord)}
-  .hist b{color:var(--laiton)}
-  .hist span{color:var(--faible); font-family:var(--mono); font-size:11.5px; margin-left:6px}
-  .hist p{margin:3px 0 0; color:var(--doux); font-size:13px}
-  .liste-fic{font-family:var(--mono); font-size:11.5px}
-  .liste-fic div{display:flex; gap:10px; padding:2px 0; border-bottom:1px solid #232a31}
+  dialog::backdrop{background:rgba(20,28,36,.55)}
+  .dlg-tete{display:flex; align-items:center; padding:16px 20px; border-bottom:2px solid var(--bord)}
+  .dlg-tete h3{margin:0; font-size:19px; font-weight:700}
+  .dlg-tete button{margin-left:auto; background:none; border:none; color:var(--encre-2); font-size:28px; line-height:1}
+  .dlg-corps{padding:18px 20px; max-height:62vh; overflow-y:auto}
+  .hist{margin-bottom:18px; padding-left:14px; border-left:4px solid var(--bleu)}
+  .hist b{color:var(--bleu); font-size:16px}
+  .hist span{color:var(--encre-3); font-family:var(--mono); font-size:13px; margin-left:8px}
+  .hist p{margin:4px 0 0; color:var(--encre-2); font-size:15px}
+  .liste-fic{font-family:var(--mono); font-size:14px}
+  .liste-fic div{display:flex; gap:12px; padding:5px 0; border-bottom:1px solid var(--bord)}
   .liste-fic .t{flex:1; overflow:hidden; text-overflow:ellipsis}
-  .liste-fic .p{color:var(--faible)}
+  .liste-fic .p{color:var(--encre-2)}
 </style>
 </head>
 <body>
@@ -172,9 +204,9 @@
 </header>
 
 <div class="hors-service" id="hors-service">
-  Le serveur ne répond plus. Les traitements en cours ont pu continuer si c'est seulement
-  la page qui a perdu le contact — rechargez pour reprendre la main. S'il est réellement
-  arrêté, relancez-le par <code>python3.13 puzzle_console.py</code>.
+  Le serveur ne répond plus. Si c'est seulement la page qui a perdu le contact, les traitements
+  continuent : rechargez pour reprendre la main. S'il est réellement arrêté, relancez-le par
+  <code>python3.13 puzzle_console.py</code>.
 </div>
 
 <div class="actions">
@@ -197,9 +229,9 @@
 
     <div class="journal">
       <div class="journal-barre">
-        <strong style="font-size:12.5px">Journal</strong>
-        <span id="j-etape" style="color:var(--doux); font-size:12px"></span>
-        <input type="text" id="j-filtre" placeholder="filtrer…">
+        <span class="t">Journal</span>
+        <span id="j-etape" style="color:var(--encre-2); font-size:15px"></span>
+        <input type="text" id="j-filtre" placeholder="filtrer…" aria-label="filtrer le journal">
         <label><input type="checkbox" id="j-suivre" checked> suivre</label>
         <button id="j-copier" style="margin-left:auto">Copier</button>
       </div>
@@ -209,16 +241,31 @@
 </main>
 
 <dialog id="dlg-version">
-  <div class="dlg-tete"><h3>Historique des versions</h3><button onclick="dlgVersion.close()">×</button></div>
+  <div class="dlg-tete"><h3>Historique des versions</h3><button onclick="dlgVersion.close()" aria-label="fermer">×</button></div>
   <div class="dlg-corps" id="corps-version"></div>
 </dialog>
 
 <dialog id="dlg-fichiers">
-  <div class="dlg-tete"><h3 id="titre-fichiers">Contenu</h3><button onclick="dlgFichiers.close()">×</button></div>
+  <div class="dlg-tete"><h3 id="titre-fichiers">Contenu</h3><button onclick="dlgFichiers.close()" aria-label="fermer">×</button></div>
   <div class="dlg-corps liste-fic" id="corps-fichiers"></div>
 </dialog>
 
 <script>
+/* ---------------------------------------------------------------------------
+   VERSION DE L'INTERFACE
+   Le serveur (puzzle_console.py) porte sa propre version ; celle-ci ne
+   concerne que la page. Les deux sont affichees dans l'historique.
+--------------------------------------------------------------------------- */
+const VERSION_IHM = "1.2";
+const HISTORIQUE_IHM = [
+  {num:"1.0", date:"12/09/2026",
+   resume:"Interface initiale : liste des étapes, exécution unitaire ou en série, journal en direct, inspection des entrées et sorties."},
+  {num:"1.1", date:"12/09/2026",
+   resume:"Bouton d'arrêt du serveur, bandeau de perte de contact, reprise de la session en cours quand on rouvre la page."},
+  {num:"1.2", date:"12/09/2026",
+   resume:"Lisibilité revue de fond en comble : fond clair, texte noir, corps de texte agrandi, contrastes conformes aux règles d'accessibilité, état de chaque étape écrit en toutes lettres au lieu d'une simple pastille de couleur."},
+];
+
 const dlgVersion = document.getElementById('dlg-version');
 const dlgFichiers = document.getElementById('dlg-fichiers');
 
@@ -248,16 +295,22 @@ function duree(s){
   const m = Math.floor(s/60);
   return m + ' min ' + Math.round(s-m*60) + ' s';
 }
-const LIBELLE = {jamais:'', attente:'en attente', encours:'en cours', ok:'terminée',
-                 suspect:'à vérifier', echec:'échec', arrete:'arrêtée'};
+const LIBELLE = {jamais:'pas lancée', attente:'en attente', encours:'en cours',
+                 ok:'terminée', suspect:'à vérifier', echec:'échec', arrete:'arrêtée'};
 
 async function charger(){
   CONFIG = await (await fetch('/api/config')).json();
-  $('#btn-version').textContent = 'v' + CONFIG.version;
+  $('#btn-version').textContent = 'v' + VERSION_IHM;
   $('#m-projet').textContent = CONFIG.projet;
   $('#m-python').textContent = 'Python ' + CONFIG.python + ' · serveur pid ' + CONFIG.pid;
-  $('#corps-version').innerHTML = CONFIG.historique.map(h =>
-    `<div class="hist"><b>v${h.num}</b><span>${h.date}</span><p>${h.resume}</p></div>`).join('');
+
+  const bloc = (titre, liste) =>
+    `<h4 style="margin:0 0 10px; font-size:16px">${titre}</h4>` +
+    liste.map(h => `<div class="hist"><b>v${h.num}</b><span>${h.date}</span><p>${h.resume}</p></div>`).join('');
+  $('#corps-version').innerHTML =
+    bloc('Interface (puzzle_console.html)', HISTORIQUE_IHM) +
+    bloc('Serveur (puzzle_console.py) — actuellement v' + CONFIG.version, CONFIG.historique);
+
   construireRail();
   boucle();
 }
@@ -272,11 +325,11 @@ function construireRail(){
      sous:"Part des meilleurs appariements pour reconstituer des groupes de pièces."},
   ];
   for(const g of groupes){
-    const bloc = document.createElement('div');
-    bloc.className = 'groupe';
-    bloc.innerHTML = `<h2>${g.titre}</h2><p>${g.sous}</p>`;
-    CONFIG.etapes.filter(e => e.pipeline === g.cle).forEach(e => bloc.appendChild(ligneEtape(e)));
-    rail.appendChild(bloc);
+    const b = document.createElement('div');
+    b.className = 'groupe';
+    b.innerHTML = `<h2>${g.titre}</h2><p>${g.sous}</p>`;
+    CONFIG.etapes.filter(e => e.pipeline === g.cle).forEach(e => b.appendChild(ligneEtape(e)));
+    rail.appendChild(b);
   }
   const outils = document.createElement('div');
   outils.className = 'groupe';
@@ -289,17 +342,19 @@ function ligneEtape(e, outil){
   const b = document.createElement('button');
   b.className = 'etape' + (e.destructif ? ' destructif' : '');
   b.dataset.id = e.id;
-  const case_ = outil ? '<span style="width:13px"></span>'
-                      : `<input type="checkbox" data-case="${e.id}" aria-label="sélectionner">`;
+  const case_ = outil ? '<span style="width:19px"></span>'
+                      : `<input type="checkbox" data-case="${e.id}" aria-label="sélectionner ${e.nom}">`;
   b.innerHTML = `
     ${case_}
     <span class="num">${outil ? '' : e.numero}</span>
     <span>
-      <span class="titre">${e.nom}</span><br>
+      <span class="titre">${e.nom}</span>
       <span class="sous">${e.script}</span>
     </span>
-    <span class="droite"><span class="pastille" data-pastille="${e.id}"></span>
-      <span data-duree="${e.id}"></span></span>`;
+    <span class="droite">
+      <span class="badge jamais" data-badge="${e.id}">pas lancée</span>
+      <span class="duree" data-duree="${e.id}"></span>
+    </span>`;
   b.addEventListener('click', ev => {
     if(ev.target.dataset.case !== undefined){
       ev.target.checked ? SELECTION.add(e.id) : SELECTION.delete(e.id);
@@ -336,7 +391,7 @@ function dessinerFiche(){
   if(st.alertes && st.alertes.length)
     avis += `<div class="avis rouge">Terminée avec le code 0, mais ${st.alertes.join(' ; ')}. Lisez le journal avant de continuer.</div>`;
 
-  const bloc = (titre, liste, sortie) => `
+  const colonne = (titre, liste, sortie) => `
     <div><h4>${titre}</h4>${
       (liste && liste.length) ? liste.map(rel => {
         const s = CHEMINS[rel] || {};
@@ -347,8 +402,12 @@ function dessinerFiche(){
         return `<button class="chemin" data-voir="${rel}">
                   <span class="nom">${rel}</span>
                   <span class="compte ${cls}">${txt}</span></button>`;
-      }).join('') : '<div style="color:var(--faible); font-size:12px">—</div>'
+      }).join('') : '<div style="color:var(--encre-3)">—</div>'
     }</div>`;
+
+  const etat = st.statut && st.statut !== 'jamais'
+    ? `${LIBELLE[st.statut]}${st.duree != null ? ' en ' + duree(st.duree) : ''}${st.code != null ? ' · code ' + st.code : ''}`
+    : "jamais lancée depuis le démarrage du serveur";
 
   $('#fiche').innerHTML = `
     <h3>${e.nom}</h3>
@@ -356,22 +415,17 @@ function dessinerFiche(){
     ${avis}
     <div class="cmd">${cmd}</div>
     <div class="flux">
-      ${bloc('Lit', e.entrees, false)}
-      ${bloc('Écrit', e.sorties, true)}
+      ${colonne('Lit', e.entrees, false)}
+      ${colonne('Écrit', e.sorties, true)}
     </div>
-    <div style="margin-top:16px; display:flex; gap:8px; align-items:center; flex-wrap:wrap">
-      <button id="f-lancer" style="background:var(--laiton); color:#1a1508; border:none; border-radius:5px; padding:8px 15px; font-weight:600">Lancer cette étape</button>
-      <span style="color:var(--doux); font-size:12.5px">${
-        st.statut && st.statut !== 'jamais'
-          ? `${LIBELLE[st.statut]}${st.duree != null ? ' en ' + duree(st.duree) : ''}${st.code != null ? ' · code ' + st.code : ''}`
-          : "jamais lancée depuis le démarrage du serveur"}</span>
+    <div style="margin-top:18px; display:flex; gap:14px; align-items:center; flex-wrap:wrap">
+      <button id="f-lancer" class="lancer">Lancer cette étape</button>
+      <span style="color:var(--encre-2); font-size:15px">${etat}</span>
     </div>`;
 
   $('#f-lancer').onclick = () => lancer([e.id]);
   $('#f-lancer').disabled = !!COURANT;
-  document.querySelectorAll('[data-voir]').forEach(b => {
-    b.onclick = () => inspecter(b.dataset.voir);
-  });
+  document.querySelectorAll('[data-voir]').forEach(b => { b.onclick = () => inspecter(b.dataset.voir); });
 }
 
 async function inspecter(rel){
@@ -380,13 +434,13 @@ async function inspecter(rel){
   dlgFichiers.showModal();
   const d = await (await fetch('/api/inspect?path=' + encodeURIComponent(rel))).json();
   if(!d.elements || !d.elements.length){
-    $('#corps-fichiers').innerHTML = "<div style=\"color:var(--faible)\">Ce répertoire est vide ou n'existe pas encore. Il sera créé par l'étape qui l'alimente.</div>";
+    $('#corps-fichiers').innerHTML = "<div style=\"color:var(--encre-2)\">Ce répertoire est vide ou n'existe pas encore. Il sera créé par l'étape qui l'alimente.</div>";
     return;
   }
   $('#corps-fichiers').innerHTML = d.elements.map(f =>
     `<div><span class="t">${f.dossier ? '📁 ' : ''}${f.nom}</span>
           <span class="p">${f.dossier ? '' : octets(f.octets)}</span></div>`).join('')
-    + (d.elements.length >= 400 ? '<div style="color:var(--faible); margin-top:8px">400 premiers éléments.</div>' : '');
+    + (d.elements.length >= 400 ? '<div style="color:var(--encre-2); margin-top:10px">400 premiers éléments.</div>' : '');
 }
 
 function majBoutons(){
@@ -451,11 +505,11 @@ async function majEtat(){
   COURANT = d.courant;
 
   for(const id in ETAT){
-    const p = document.querySelector(`[data-pastille="${id}"]`);
-    if(p) p.className = 'pastille ' + (ETAT[id].statut || '');
+    const st = ETAT[id].statut || 'jamais';
+    const b = document.querySelector(`[data-badge="${id}"]`);
+    if(b){ b.className = 'badge ' + st; b.textContent = LIBELLE[st] || st; }
     const t = document.querySelector(`[data-duree="${id}"]`);
-    if(t) t.textContent = ETAT[id].duree != null ? duree(ETAT[id].duree)
-                        : (ETAT[id].statut === 'encours' ? '…' : '');
+    if(t) t.textContent = ETAT[id].duree != null ? duree(ETAT[id].duree) : '';
   }
 
   const attente = d.attente ? d.attente.length : 0;
