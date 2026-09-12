@@ -1,18 +1,528 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Un puzzle</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Console Puzzle</title>
 <style>
-  body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background:#f5f5f7; color:#1d1d1f; text-align:center; padding:60px 20px; }
-  h1 { color:#0071e3; }
-  p { color:#86868b; }
+  :root{
+    --fond:#161a1f; --panneau:#1e242b; --creux:#12161a; --bord:#2c343d;
+    --texte:#dde3ea; --doux:#8b98a6; --faible:#5d6874;
+    --laiton:#d9a441; --vert:#52a97f; --orange:#d98b45; --rouge:#cf5c5c; --bleu:#6e9ec9;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--fond); color:var(--texte);
+    font-family:system-ui,-apple-system,"Helvetica Neue",sans-serif;
+    font-size:14px; line-height:1.5;
+  }
+  button{font:inherit; color:inherit; cursor:pointer}
+  button:focus-visible,input:focus-visible{outline:2px solid var(--laiton); outline-offset:2px}
+
+  /* ---------- en-tete ---------- */
+  header{
+    display:flex; align-items:center; gap:18px; flex-wrap:wrap;
+    padding:14px 20px; background:var(--panneau); border-bottom:1px solid var(--bord);
+  }
+  h1{margin:0; font-size:17px; font-weight:600; letter-spacing:.2px}
+  .version{
+    background:var(--laiton); color:#1a1508; border:none; border-radius:4px;
+    padding:5px 11px; font-weight:700; font-size:13px;
+  }
+  .version:hover{filter:brightness(1.1)}
+  .meta{margin-left:auto; text-align:right; font-family:var(--mono); font-size:11.5px; color:var(--doux)}
+  .meta div{white-space:nowrap}
+
+  /* ---------- bandeau de perte de contact ---------- */
+  .hors-service{
+    display:none; padding:9px 20px; background:#3a2326; color:#f0c0c0;
+    border-bottom:1px solid #5e3236; font-size:13px;
+  }
+  .hors-service.visible{display:block}
+
+  /* ---------- barre d'actions ---------- */
+  .actions{
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    padding:10px 20px; background:var(--creux); border-bottom:1px solid var(--bord);
+  }
+  .actions button{
+    background:#28313a; border:1px solid var(--bord); border-radius:5px; padding:7px 13px;
+  }
+  .actions button:hover:not(:disabled){background:#323d48}
+  .actions button:disabled{opacity:.4; cursor:not-allowed}
+  .actions .primaire{background:var(--laiton); border-color:var(--laiton); color:#1a1508; font-weight:600}
+  .actions .danger{border-color:#5e3236; color:#e79a9a}
+  .etat-global{margin-left:auto; font-size:12.5px; color:var(--doux)}
+
+  /* ---------- disposition ---------- */
+  main{display:grid; grid-template-columns:minmax(340px,420px) 1fr; height:calc(100vh - 108px)}
+  @media (max-width:900px){ main{grid-template-columns:1fr; height:auto} }
+
+  .rail{overflow-y:auto; border-right:1px solid var(--bord); padding:12px}
+  .groupe{margin-bottom:22px}
+  .groupe h2{margin:0 0 4px; font-size:13px; font-weight:600; color:var(--doux)}
+  .groupe p{margin:0 0 10px; font-size:12px; color:var(--faible)}
+
+  .etape{
+    display:grid; grid-template-columns:auto 34px 1fr auto; align-items:center; gap:9px;
+    padding:9px 10px; border:1px solid transparent; border-radius:6px; width:100%;
+    background:none; text-align:left; margin-bottom:2px;
+  }
+  .etape:hover{background:#222932}
+  .etape.actif{background:#263039; border-color:var(--bord)}
+  .etape .num{font-family:var(--mono); font-size:12px; color:var(--faible); text-align:right}
+  .etape .titre{font-size:13.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .etape .sous{font-family:var(--mono); font-size:11px; color:var(--faible)}
+  .etape .droite{font-family:var(--mono); font-size:11px; color:var(--doux); text-align:right}
+  .pastille{display:inline-block; width:9px; height:9px; border-radius:50%; background:var(--faible)}
+  .pastille.attente{background:var(--bleu)}
+  .pastille.encours{background:var(--laiton); animation:battement 1.1s ease-in-out infinite}
+  .pastille.ok{background:var(--vert)}
+  .pastille.suspect{background:var(--orange)}
+  .pastille.echec{background:var(--rouge)}
+  @keyframes battement{50%{opacity:.25}}
+  @media (prefers-reduced-motion:reduce){ .pastille.encours{animation:none} }
+
+  .destructif .titre{color:#e79a9a}
+
+  /* ---------- detail ---------- */
+  .detail{display:flex; flex-direction:column; min-width:0; overflow:hidden}
+  .fiche{padding:16px 20px; border-bottom:1px solid var(--bord); overflow-y:auto; max-height:52%}
+  .fiche h3{margin:0 0 6px; font-size:16px; font-weight:600}
+  .fiche .desc{margin:0 0 14px; color:var(--doux); max-width:72ch}
+  .cmd{
+    font-family:var(--mono); font-size:11.5px; background:var(--creux); color:var(--doux);
+    border:1px solid var(--bord); border-radius:5px; padding:9px 11px; margin-bottom:14px;
+    overflow-x:auto; white-space:pre; -webkit-user-select:all; user-select:all;
+  }
+  .avis{
+    border-left:3px solid var(--orange); background:#241f16; padding:9px 12px;
+    border-radius:0 5px 5px 0; margin-bottom:14px; font-size:13px;
+  }
+  .avis.rouge{border-left-color:var(--rouge); background:#251a1b}
+
+  .flux{display:grid; grid-template-columns:1fr 1fr; gap:16px}
+  @media (max-width:700px){ .flux{grid-template-columns:1fr} }
+  .flux h4{margin:0 0 7px; font-size:12px; font-weight:600; color:var(--doux)}
+  .chemin{
+    display:flex; align-items:baseline; gap:8px; padding:6px 9px; border-radius:5px;
+    background:var(--creux); margin-bottom:4px; width:100%; border:1px solid transparent;
+    font-family:var(--mono); font-size:11.5px; text-align:left;
+  }
+  .chemin:hover{border-color:var(--bord)}
+  .chemin .nom{flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .chemin .compte{color:var(--doux); white-space:nowrap}
+  .chemin .compte.vide{color:var(--rouge)}
+  .chemin .compte.absent{color:var(--faible)}
+
+  /* ---------- journal ---------- */
+  .journal{display:flex; flex-direction:column; flex:1; min-height:240px}
+  .journal-barre{
+    display:flex; align-items:center; gap:10px; padding:8px 20px;
+    border-bottom:1px solid var(--bord); background:var(--creux);
+  }
+  .journal-barre label{font-size:12px; color:var(--doux); display:flex; align-items:center; gap:5px}
+  .journal-barre input[type=text]{
+    background:var(--fond); border:1px solid var(--bord); border-radius:4px;
+    padding:5px 8px; color:var(--texte); font-family:var(--mono); font-size:11.5px; width:190px;
+  }
+  .journal-barre button{background:none; border:1px solid var(--bord); border-radius:4px; padding:5px 10px; font-size:12px}
+  .lignes{
+    flex:1; overflow:auto; margin:0; padding:12px 20px; background:var(--fond);
+    font-family:var(--mono); font-size:11.5px; line-height:1.65; white-space:pre-wrap;
+    word-break:break-word;
+  }
+  .lignes .l-cmd{color:var(--laiton)}
+  .lignes .l-err{color:var(--rouge)}
+  .lignes .l-ok{color:var(--vert)}
+  .lignes .l-avert{color:var(--orange)}
+  .vide-etat{color:var(--faible); padding:26px 20px; font-family:system-ui,sans-serif}
+
+  /* ---------- fenetres ---------- */
+  dialog{
+    border:1px solid var(--bord); border-radius:8px; background:var(--panneau);
+    color:var(--texte); padding:0; max-width:720px; width:92%;
+  }
+  dialog::backdrop{background:rgba(0,0,0,.6)}
+  .dlg-tete{display:flex; align-items:center; padding:14px 18px; border-bottom:1px solid var(--bord)}
+  .dlg-tete h3{margin:0; font-size:15px}
+  .dlg-tete button{margin-left:auto; background:none; border:none; color:var(--doux); font-size:20px; line-height:1}
+  .dlg-corps{padding:16px 18px; max-height:60vh; overflow-y:auto}
+  .hist{margin-bottom:14px; padding-left:12px; border-left:2px solid var(--bord)}
+  .hist b{color:var(--laiton)}
+  .hist span{color:var(--faible); font-family:var(--mono); font-size:11.5px; margin-left:6px}
+  .hist p{margin:3px 0 0; color:var(--doux); font-size:13px}
+  .liste-fic{font-family:var(--mono); font-size:11.5px}
+  .liste-fic div{display:flex; gap:10px; padding:2px 0; border-bottom:1px solid #232a31}
+  .liste-fic .t{flex:1; overflow:hidden; text-overflow:ellipsis}
+  .liste-fic .p{color:var(--faible)}
 </style>
 </head>
 <body>
-<h1>Un puzzle</h1>
-<p>Nouvelle application créée avec Le Déployeur.</p>
-<p>Déploie ton code depuis l'étape 3 pour remplacer cette page.</p>
+
+<header>
+  <h1>Console Puzzle</h1>
+  <button class="version" id="btn-version" title="Historique des versions">v—</button>
+  <div class="meta">
+    <div id="m-projet">—</div>
+    <div id="m-python">—</div>
+  </div>
+</header>
+
+<div class="hors-service" id="hors-service">
+  Le serveur ne répond plus. Les traitements en cours ont pu continuer si c'est seulement
+  la page qui a perdu le contact — rechargez pour reprendre la main. S'il est réellement
+  arrêté, relancez-le par <code>python3.13 puzzle_console.py</code>.
+</div>
+
+<div class="actions">
+  <button class="primaire" id="a-selection">Lancer la sélection</button>
+  <button id="a-suite">Lancer à partir d'ici</button>
+  <button id="a-tout1">Tout le pipeline I</button>
+  <button id="a-tout2">Tout le pipeline II</button>
+  <button class="danger" id="a-arret" disabled>Arrêter l'étape</button>
+  <button class="danger" id="a-quitter">Arrêter le serveur</button>
+  <div class="etat-global" id="etat-global">Prêt</div>
+</div>
+
+<main>
+  <nav class="rail" id="rail"></nav>
+
+  <section class="detail">
+    <div class="fiche" id="fiche">
+      <div class="vide-etat">Choisissez une étape dans la liste pour voir ce qu'elle lit, ce qu'elle écrit et son journal.</div>
+    </div>
+
+    <div class="journal">
+      <div class="journal-barre">
+        <strong style="font-size:12.5px">Journal</strong>
+        <span id="j-etape" style="color:var(--doux); font-size:12px"></span>
+        <input type="text" id="j-filtre" placeholder="filtrer…">
+        <label><input type="checkbox" id="j-suivre" checked> suivre</label>
+        <button id="j-copier" style="margin-left:auto">Copier</button>
+      </div>
+      <pre class="lignes" id="lignes"><span class="vide-etat">Aucune exécution pour le moment.</span></pre>
+    </div>
+  </section>
+</main>
+
+<dialog id="dlg-version">
+  <div class="dlg-tete"><h3>Historique des versions</h3><button onclick="dlgVersion.close()">×</button></div>
+  <div class="dlg-corps" id="corps-version"></div>
+</dialog>
+
+<dialog id="dlg-fichiers">
+  <div class="dlg-tete"><h3 id="titre-fichiers">Contenu</h3><button onclick="dlgFichiers.close()">×</button></div>
+  <div class="dlg-corps liste-fic" id="corps-fichiers"></div>
+</dialog>
+
+<script>
+const dlgVersion = document.getElementById('dlg-version');
+const dlgFichiers = document.getElementById('dlg-fichiers');
+
+let CONFIG = null;
+let ETAT = {};
+let CHEMINS = {};
+let COURANT = null;          // etape en cours d'execution
+let SELECTION = new Set();   // cases cochees
+let AFFICHEE = null;         // etape affichee dans le detail
+let LOG_OFFSET = 0;
+let LOG_LIGNES = [];
+let ECHECS = 0;              // appels reseau consecutifs rates
+let QUITTE = false;
+
+const $ = s => document.querySelector(s);
+
+function octets(n){
+  if(!n) return '0';
+  const u = ['o','Ko','Mo','Go'];
+  let i = 0;
+  while(n >= 1024 && i < u.length-1){ n /= 1024; i++; }
+  return n.toFixed(n < 10 && i > 0 ? 1 : 0) + ' ' + u[i];
+}
+function duree(s){
+  if(s == null) return '';
+  if(s < 60) return s.toFixed(1) + ' s';
+  const m = Math.floor(s/60);
+  return m + ' min ' + Math.round(s-m*60) + ' s';
+}
+const LIBELLE = {jamais:'', attente:'en attente', encours:'en cours', ok:'terminée',
+                 suspect:'à vérifier', echec:'échec', arrete:'arrêtée'};
+
+async function charger(){
+  CONFIG = await (await fetch('/api/config')).json();
+  $('#btn-version').textContent = 'v' + CONFIG.version;
+  $('#m-projet').textContent = CONFIG.projet;
+  $('#m-python').textContent = 'Python ' + CONFIG.python + ' · serveur pid ' + CONFIG.pid;
+  $('#corps-version').innerHTML = CONFIG.historique.map(h =>
+    `<div class="hist"><b>v${h.num}</b><span>${h.date}</span><p>${h.resume}</p></div>`).join('');
+  construireRail();
+  boucle();
+}
+
+function construireRail(){
+  const rail = $('#rail');
+  rail.innerHTML = '';
+  const groupes = [
+    {cle:'I',  titre:'Pipeline I — de la planche aux profils',
+     sous:"Découpe les pièces, trouve coins et profils, puis compare les profils entre eux."},
+    {cle:'II', titre:"Pipeline II — de l'appariement à l'assemblage",
+     sous:"Part des meilleurs appariements pour reconstituer des groupes de pièces."},
+  ];
+  for(const g of groupes){
+    const bloc = document.createElement('div');
+    bloc.className = 'groupe';
+    bloc.innerHTML = `<h2>${g.titre}</h2><p>${g.sous}</p>`;
+    CONFIG.etapes.filter(e => e.pipeline === g.cle).forEach(e => bloc.appendChild(ligneEtape(e)));
+    rail.appendChild(bloc);
+  }
+  const outils = document.createElement('div');
+  outils.className = 'groupe';
+  outils.innerHTML = `<h2>Outils</h2><p>Scripts de contrôle, hors chaîne de traitement.</p>`;
+  CONFIG.outils.forEach(o => outils.appendChild(ligneEtape(o, true)));
+  rail.appendChild(outils);
+}
+
+function ligneEtape(e, outil){
+  const b = document.createElement('button');
+  b.className = 'etape' + (e.destructif ? ' destructif' : '');
+  b.dataset.id = e.id;
+  const case_ = outil ? '<span style="width:13px"></span>'
+                      : `<input type="checkbox" data-case="${e.id}" aria-label="sélectionner">`;
+  b.innerHTML = `
+    ${case_}
+    <span class="num">${outil ? '' : e.numero}</span>
+    <span>
+      <span class="titre">${e.nom}</span><br>
+      <span class="sous">${e.script}</span>
+    </span>
+    <span class="droite"><span class="pastille" data-pastille="${e.id}"></span>
+      <span data-duree="${e.id}"></span></span>`;
+  b.addEventListener('click', ev => {
+    if(ev.target.dataset.case !== undefined){
+      ev.target.checked ? SELECTION.add(e.id) : SELECTION.delete(e.id);
+      majBoutons();
+      return;
+    }
+    afficher(e.id);
+  });
+  return b;
+}
+
+function afficher(id){
+  AFFICHEE = id;
+  LOG_OFFSET = 0; LOG_LIGNES = [];
+  $('#lignes').innerHTML = '<span class="vide-etat">Chargement…</span>';
+  document.querySelectorAll('.etape').forEach(n => n.classList.toggle('actif', n.dataset.id === id));
+  dessinerFiche();
+  majJournal(true);
+}
+
+function etapeParId(id){
+  return (CONFIG.etapes.concat(CONFIG.outils)).find(e => e.id === id);
+}
+
+function dessinerFiche(){
+  const e = etapeParId(AFFICHEE);
+  if(!e) return;
+  const st = ETAT[e.id] || {};
+  const cmd = [CONFIG.interpreteur.split('/').pop(), e.script].concat(e.args || []).join(' ');
+
+  let avis = '';
+  if(e.note) avis += `<div class="avis">${e.note}</div>`;
+  if(e.destructif) avis += `<div class="avis rouge">Cette étape supprime des fichiers produits. Les sources ne sont pas touchées.</div>`;
+  if(st.alertes && st.alertes.length)
+    avis += `<div class="avis rouge">Terminée avec le code 0, mais ${st.alertes.join(' ; ')}. Lisez le journal avant de continuer.</div>`;
+
+  const bloc = (titre, liste, sortie) => `
+    <div><h4>${titre}</h4>${
+      (liste && liste.length) ? liste.map(rel => {
+        const s = CHEMINS[rel] || {};
+        let cls = '', txt;
+        if(!s.existe){ cls = 'absent'; txt = 'absent'; }
+        else if(!s.fichiers){ cls = sortie ? 'vide' : ''; txt = 'vide'; }
+        else txt = `${s.fichiers} fich. · ${octets(s.octets)}`;
+        return `<button class="chemin" data-voir="${rel}">
+                  <span class="nom">${rel}</span>
+                  <span class="compte ${cls}">${txt}</span></button>`;
+      }).join('') : '<div style="color:var(--faible); font-size:12px">—</div>'
+    }</div>`;
+
+  $('#fiche').innerHTML = `
+    <h3>${e.nom}</h3>
+    <p class="desc">${e.description || ''}</p>
+    ${avis}
+    <div class="cmd">${cmd}</div>
+    <div class="flux">
+      ${bloc('Lit', e.entrees, false)}
+      ${bloc('Écrit', e.sorties, true)}
+    </div>
+    <div style="margin-top:16px; display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+      <button id="f-lancer" style="background:var(--laiton); color:#1a1508; border:none; border-radius:5px; padding:8px 15px; font-weight:600">Lancer cette étape</button>
+      <span style="color:var(--doux); font-size:12.5px">${
+        st.statut && st.statut !== 'jamais'
+          ? `${LIBELLE[st.statut]}${st.duree != null ? ' en ' + duree(st.duree) : ''}${st.code != null ? ' · code ' + st.code : ''}`
+          : "jamais lancée depuis le démarrage du serveur"}</span>
+    </div>`;
+
+  $('#f-lancer').onclick = () => lancer([e.id]);
+  $('#f-lancer').disabled = !!COURANT;
+  document.querySelectorAll('[data-voir]').forEach(b => {
+    b.onclick = () => inspecter(b.dataset.voir);
+  });
+}
+
+async function inspecter(rel){
+  $('#titre-fichiers').textContent = rel;
+  $('#corps-fichiers').innerHTML = 'Lecture…';
+  dlgFichiers.showModal();
+  const d = await (await fetch('/api/inspect?path=' + encodeURIComponent(rel))).json();
+  if(!d.elements || !d.elements.length){
+    $('#corps-fichiers').innerHTML = "<div style=\"color:var(--faible)\">Ce répertoire est vide ou n'existe pas encore. Il sera créé par l'étape qui l'alimente.</div>";
+    return;
+  }
+  $('#corps-fichiers').innerHTML = d.elements.map(f =>
+    `<div><span class="t">${f.dossier ? '📁 ' : ''}${f.nom}</span>
+          <span class="p">${f.dossier ? '' : octets(f.octets)}</span></div>`).join('')
+    + (d.elements.length >= 400 ? '<div style="color:var(--faible); margin-top:8px">400 premiers éléments.</div>' : '');
+}
+
+function majBoutons(){
+  const occupe = !!COURANT;
+  $('#a-selection').disabled = occupe || SELECTION.size === 0;
+  $('#a-suite').disabled = occupe || !AFFICHEE;
+  $('#a-tout1').disabled = occupe;
+  $('#a-tout2').disabled = occupe;
+  $('#a-arret').disabled = !occupe;
+  const f = $('#f-lancer');
+  if(f) f.disabled = occupe;
+}
+
+async function lancer(ids){
+  if(!ids.length) return;
+  const durs = ids.filter(i => (etapeParId(i) || {}).destructif);
+  if(durs.length && !confirm(
+      'Cette exécution commence par vider des répertoires de sortie.\n\n' +
+      'Les planches sources et les scripts ne sont pas touchés.\n\nContinuer ?')) return;
+  const r = await (await fetch('/api/run', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({steps: ids})
+  })).json();
+  if(!r.ok) alert(r.message);
+  else if(ids.indexOf(AFFICHEE) === -1) afficher(ids[0]);
+}
+
+$('#a-selection').onclick = () => lancer(ordonner([...SELECTION]));
+$('#a-tout1').onclick = () => lancer(CONFIG.etapes.filter(e => e.pipeline === 'I').map(e => e.id));
+$('#a-tout2').onclick = () => lancer(CONFIG.etapes.filter(e => e.pipeline === 'II').map(e => e.id));
+$('#a-suite').onclick = () => {
+  const tous = CONFIG.etapes.map(e => e.id);
+  const i = tous.indexOf(AFFICHEE);
+  if(i === -1){ alert("Choisissez d'abord une étape du pipeline."); return; }
+  lancer(tous.slice(i));
+};
+$('#a-arret').onclick = () => fetch('/api/stop', {method:'POST'});
+$('#a-quitter').onclick = async () => {
+  if(!confirm(COURANT
+      ? "Une étape tourne en ce moment : arrêter le serveur va l'interrompre.\n\nContinuer ?"
+      : 'Arrêter le serveur ? La page ne pilotera plus rien tant que vous ne le relancez pas.')) return;
+  QUITTE = true;
+  try{ await fetch('/api/quit', {method:'POST'}); }catch(e){}
+  $('#hors-service').textContent =
+    'Serveur arrêté. Pour le relancer : python3.13 puzzle_console.py dans le répertoire du projet.';
+  $('#hors-service').classList.add('visible');
+  $('#etat-global').textContent = 'Serveur arrêté';
+};
+$('#btn-version').onclick = () => dlgVersion.showModal();
+$('#j-copier').onclick = () => navigator.clipboard.writeText(LOG_LIGNES.join('\n'));
+$('#j-filtre').oninput = () => rendreLignes();
+
+function ordonner(ids){
+  const tous = CONFIG.etapes.concat(CONFIG.outils).map(e => e.id);
+  return ids.slice().sort((a,b) => tous.indexOf(a) - tous.indexOf(b));
+}
+
+async function majEtat(){
+  const d = await (await fetch('/api/state')).json();
+  ETAT = d.etats; CHEMINS = d.chemins;
+  const avant = COURANT;
+  COURANT = d.courant;
+
+  for(const id in ETAT){
+    const p = document.querySelector(`[data-pastille="${id}"]`);
+    if(p) p.className = 'pastille ' + (ETAT[id].statut || '');
+    const t = document.querySelector(`[data-duree="${id}"]`);
+    if(t) t.textContent = ETAT[id].duree != null ? duree(ETAT[id].duree)
+                        : (ETAT[id].statut === 'encours' ? '…' : '');
+  }
+
+  const attente = d.attente ? d.attente.length : 0;
+  $('#etat-global').textContent = COURANT
+    ? `${(etapeParId(COURANT)||{}).nom || COURANT} en cours` + (attente ? ` · ${attente} en attente` : '')
+    : (attente ? `${attente} étape(s) en attente` : 'Prêt');
+
+  // Quand on rouvre la page pendant un traitement, on retombe sur l'etape active.
+  if(COURANT && COURANT !== avant) afficher(COURANT);
+  if(AFFICHEE) dessinerFiche();
+  majBoutons();
+}
+
+async function majJournal(reinit){
+  if(!AFFICHEE) return;
+  if(reinit){ LOG_OFFSET = 0; LOG_LIGNES = []; }
+  const d = await (await fetch(`/api/log?step=${encodeURIComponent(AFFICHEE)}&from=${LOG_OFFSET}`)).json();
+  if(d.total < LOG_OFFSET){ LOG_OFFSET = 0; LOG_LIGNES = []; }
+  if(d.lignes && d.lignes.length){
+    LOG_LIGNES = LOG_LIGNES.concat(d.lignes);
+    LOG_OFFSET = d.total;
+    rendreLignes();
+  } else if(reinit){
+    rendreLignes();
+  }
+  const e = etapeParId(AFFICHEE);
+  $('#j-etape').textContent = e ? '· ' + e.nom : '';
+}
+
+function classeLigne(l){
+  if(l.startsWith('$ ')) return 'l-cmd';
+  if(/^Usage\s*:|Traceback|^Erreur|Error|introuvable/i.test(l)) return 'l-err';
+  if(/UserWarning|Warning|Attention|ALERTE/i.test(l)) return 'l-avert';
+  if(/^\[OK\]|✅|Terminé|terminé avec succès/i.test(l)) return 'l-ok';
+  return '';
+}
+
+function rendreLignes(){
+  const filtre = $('#j-filtre').value.trim().toLowerCase();
+  const lignes = filtre ? LOG_LIGNES.filter(l => l.toLowerCase().includes(filtre)) : LOG_LIGNES;
+  const zone = $('#lignes');
+  if(!lignes.length){
+    zone.innerHTML = `<span class="vide-etat">${
+      filtre ? 'Aucune ligne ne contient ce texte.' : 'Aucune exécution pour le moment.'}</span>`;
+    return;
+  }
+  zone.innerHTML = lignes.map(l => {
+    const c = classeLigne(l);
+    const t = l.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return c ? `<span class="${c}">${t}</span>` : t;
+  }).join('\n');
+  if($('#j-suivre').checked) zone.scrollTop = zone.scrollHeight;
+}
+
+async function boucle(){
+  if(QUITTE) return;
+  try{
+    await majEtat();
+    await majJournal(false);
+    if(ECHECS){ ECHECS = 0; $('#hors-service').classList.remove('visible'); }
+  }catch(e){
+    if(++ECHECS >= 3) $('#hors-service').classList.add('visible');
+  }
+  setTimeout(boucle, 900);
+}
+
+charger();
+</script>
 </body>
 </html>
